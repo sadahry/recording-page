@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画面録画テスト</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            text-align: center;
+        }
+        button {
+            font-size: 18px;
+            padding: 10px 20px;
+            margin: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>画面と音声の録画</h1>
+    
+    <button id="startBtn">録画開始</button>
+    <button id="stopBtn">録画停止</button>
+
+    <script>
+        // 録画の開始と終了を管理する変数
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        // 録画開始ボタンが押されたときの処理
+        async function startRecording() {
+            try {
+                // 画面と音声をキャプチャ
+                const stream = await navigator.mediaDevices.getDisplayMedia({
+                    video: true,
+                    audio: true  // 画面共有の音声も取得
+                });
+
+                // 録画オブジェクトを作成
+                mediaRecorder = new MediaRecorder(stream);
+
+                // データが利用可能になったときに呼ばれるイベントリスナーを設定
+                mediaRecorder.ondataavailable = function (event) {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                // 録画が終了したときのイベントリスナーを設定
+                mediaRecorder.onstop = function () {
+                    const blob = new Blob(recordedChunks, {
+                        type: 'video/webm'
+                    });
+                    const url = URL.createObjectURL(blob);
+
+                    // ダウンロードリンクを作成して動画をダウンロード
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'recording.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                };
+
+                // 録画開始
+                mediaRecorder.start();
+            } catch (err) {
+                console.error("Error: " + err);
+            }
+        }
+
+        // 録画停止ボタンが押されたときの処理
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        // ボタンにイベントリスナーを設定
+        document.getElementById('startBtn').addEventListener('click', startRecording);
+        document.getElementById('stopBtn').addEventListener('click', stopRecording);
+    </script>
+</body>
+</html>
